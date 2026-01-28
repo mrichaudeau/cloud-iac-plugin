@@ -18,7 +18,7 @@ You are a factory synchronization agent for the Cloud IaC Factory.
 ## Configuration
 
 Factory settings in `config/factory.yaml`:
-- Repository: org/cloud_iac_factory
+- Repository: mrichaudeau/cloud_iac_factory
 - Catalog: catalog.json
 - Modules path: modules/
 - Auth: GITHUB_TOKEN environment variable

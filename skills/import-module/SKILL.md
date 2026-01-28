@@ -58,7 +58,7 @@ Import a module from the Cloud IaC Factory into the current project.
 
 ```hcl
 module "vpc" {
-  source = "git::https://github.com/org/cloud_iac_factory.git//modules/aws/networking/vpc/v1.2.0"
+  source = "git::https://github.com/mrichaudeau/cloud_iac_factory.git//modules/aws/networking/vpc/v1.2.0"
 
   project     = var.project
   environment = var.environment

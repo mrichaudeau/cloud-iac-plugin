@@ -254,7 +254,7 @@ Avant de generer, verifier les modules disponibles dans `catalog.json` de la fac
 ### Utiliser un Module de la Factory
 ```hcl
 module "vpc" {
-  source = "git::https://github.com/org/cloud_iac_factory.git//modules/aws/networking/vpc/v1.2.0"
+  source = "git::https://github.com/mrichaudeau/cloud_iac_factory.git//modules/aws/networking/vpc/v1.2.0"
 
   project     = var.project
   environment = var.environment

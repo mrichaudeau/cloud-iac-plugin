@@ -3,7 +3,7 @@
 
 factory:
   # Repository GitHub de la factory
-  repository: "org/cloud_iac_factory"
+  repository: "mrichaudeau/cloud_iac_factory"
   branch: "main"
 
   # Methode d'authentification

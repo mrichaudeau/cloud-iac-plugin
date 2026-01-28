@@ -249,7 +249,7 @@ module:
   usage_examples:
     minimal: |
       module "vpc" {
-        source = "git::https://github.com/org/cloud_iac_factory.git//modules/aws/networking/vpc/v1.2.0"
+        source = "git::https://github.com/mrichaudeau/cloud_iac_factory.git//modules/aws/networking/vpc/v1.2.0"
 
         project     = "myapp"
         environment = "dev"
@@ -407,7 +407,7 @@ jobs:
 ```hcl
 # Dans le code genere
 module "vpc" {
-  source = "git::https://github.com/org/cloud_iac_factory.git//modules/aws/networking/vpc/v1.2.0"
+  source = "git::https://github.com/mrichaudeau/cloud_iac_factory.git//modules/aws/networking/vpc/v1.2.0"
 
   project     = var.project
   environment = var.environment
