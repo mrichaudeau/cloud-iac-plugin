@@ -7,7 +7,7 @@
   "plugins": [
     {
       "name": "iac",
-      "source": ".",
+      "source": "./",
       "description": "Generate production-ready Terraform infrastructure from architecture schemas",
       "version": "0.1.0",
       "tags": ["terraform", "infrastructure", "aws", "iac", "devops"],
