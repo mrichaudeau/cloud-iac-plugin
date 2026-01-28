@@ -1,0 +1,203 @@
+# Configuration specifique AWS
+# Versions, services disponibles, regions
+
+provider:
+  name: "aws"
+  display_name: "Amazon Web Services"
+
+# Versions
+versions:
+  terraform: ">= 1.5.0"
+  provider: "~> 5.0"
+
+# Regions supportees
+regions:
+  europe:
+    - id: "eu-west-1"
+      name: "Ireland"
+      default: true
+    - id: "eu-west-2"
+      name: "London"
+    - id: "eu-west-3"
+      name: "Paris"
+    - id: "eu-central-1"
+      name: "Frankfurt"
+    - id: "eu-north-1"
+      name: "Stockholm"
+
+  north_america:
+    - id: "us-east-1"
+      name: "N. Virginia"
+    - id: "us-east-2"
+      name: "Ohio"
+    - id: "us-west-1"
+      name: "N. California"
+    - id: "us-west-2"
+      name: "Oregon"
+
+  asia_pacific:
+    - id: "ap-southeast-1"
+      name: "Singapore"
+    - id: "ap-southeast-2"
+      name: "Sydney"
+    - id: "ap-northeast-1"
+      name: "Tokyo"
+
+# Categories de modules
+categories:
+  networking:
+    - vpc
+    - security_group
+    - alb
+    - nlb
+    - route53_zone
+    - route53_records
+    - cloudfront
+    - vpc_endpoints
+    - nat_gateway
+    - transit_gateway
+
+  compute:
+    - ec2_instance
+    - ec2_asg
+    - ecs_cluster
+    - ecs_service
+    - eks_cluster
+    - eks_node_group
+    - lambda_function
+    - batch
+
+  data:
+    - rds_instance
+    - rds_aurora
+    - dynamodb_table
+    - s3_bucket
+    - elasticache
+    - opensearch
+    - efs
+
+  security:
+    - kms_key
+    - secrets_manager
+    - iam_role
+    - iam_policy
+    - waf_web_acl
+    - acm_certificate
+
+  messaging:
+    - sqs_queue
+    - sns_topic
+    - eventbridge_rule
+    - mq_broker
+
+  observability:
+    - cloudwatch_log_group
+    - cloudwatch_alarm
+    - cloudwatch_dashboard
+    - xray
+
+  governance:
+    - cloudtrail
+    - config_recorder
+    - config_rule
+    - guardduty
+    - security_hub
+    - budgets
+    - cost_anomaly
+
+# Services de gouvernance obligatoires
+mandatory_governance:
+  all_environments:
+    - cloudtrail
+    - guardduty
+    - budgets
+    - kms_key
+    - cloudwatch_logs
+
+  staging_prod:
+    - vpc_flow_logs
+    - security_hub
+    - config_recorder
+    - aws_backup
+
+  prod_only:
+    - waf_web_acl  # si internet
+    - shield  # si critical
+
+# Ports sensibles
+sensitive_ports:
+  - port: 22
+    service: "SSH"
+  - port: 23
+    service: "Telnet"
+  - port: 3389
+    service: "RDP"
+  - port: 3306
+    service: "MySQL"
+  - port: 5432
+    service: "PostgreSQL"
+  - port: 1433
+    service: "MSSQL"
+  - port: 27017
+    service: "MongoDB"
+  - port: 6379
+    service: "Redis"
+  - port: 9200
+    service: "Elasticsearch"
+  - port: 11211
+    service: "Memcached"
+
+# Abreviations de nommage
+naming_abbreviations:
+  vpc: "vpc"
+  subnet: "subnet"
+  security_group: "sg"
+  application_load_balancer: "alb"
+  network_load_balancer: "nlb"
+  ecs_cluster: "ecs"
+  ecs_service: "svc"
+  ecs_task: "task"
+  lambda: "fn"
+  rds: "rds"
+  aurora: "aurora"
+  s3: "s3"
+  dynamodb: "ddb"
+  elasticache: "cache"
+  kms: "kms"
+  secrets_manager: "secret"
+  iam_role: "role"
+  iam_policy: "policy"
+  cloudwatch_log_group: "log"
+  cloudwatch_alarm: "alarm"
+  sns: "sns"
+  sqs: "sqs"
+  eventbridge: "rule"
+  route53: "zone"
+  acm: "cert"
+  waf: "waf"
+  nat_gateway: "nat"
+  internet_gateway: "igw"
+  vpc_endpoint: "vpce"
+
+# Engines RDS supportes
+rds_engines:
+  - engine: "postgres"
+    versions: ["15", "14", "13"]
+    default_version: "15"
+    port: 5432
+
+  - engine: "mysql"
+    versions: ["8.0", "5.7"]
+    default_version: "8.0"
+    port: 3306
+
+  - engine: "mariadb"
+    versions: ["10.6", "10.5"]
+    default_version: "10.6"
+    port: 3306
+
+# Instance classes RDS recommandees
+rds_instance_classes:
+  dev: ["db.t3.micro", "db.t3.small"]
+  staging: ["db.t3.small", "db.t3.medium", "db.r6g.medium"]
+  prod: ["db.r6g.large", "db.r6g.xlarge", "db.r6g.2xlarge"]

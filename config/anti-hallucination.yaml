@@ -1,0 +1,249 @@
+# Regles de validation anti-hallucination
+# Ces regles empechent la generation de code invalide
+
+schema_version: "1.0"
+
+# Principe fondamental
+# L'agent NE DOIT JAMAIS inventer de ressources, attributs ou configurations
+# qui n'existent pas dans la documentation officielle Terraform
+
+# =============================================================================
+# REGLES DE VALIDATION POST-GENERATION
+# =============================================================================
+
+validation_rules:
+  # Chaque module reference doit exister
+  module_references:
+    rule: "all_modules_must_exist"
+    action: "validate_against_catalog"
+    on_failure: "error"
+    message: "Module reference non trouve dans le catalog factory"
+
+  # Chaque ressource doit avoir un type valide
+  resource_types:
+    rule: "all_resource_types_must_be_valid"
+    action: "validate_against_provider_schema"
+    on_failure: "error"
+    message: "Type de ressource Terraform invalide"
+
+  # Chaque attribut doit exister pour le type de ressource
+  resource_attributes:
+    rule: "all_attributes_must_exist"
+    action: "validate_against_resource_schema"
+    on_failure: "error"
+    message: "Attribut inexistant pour ce type de ressource"
+
+  # Les valeurs doivent etre du bon type
+  attribute_types:
+    rule: "all_values_must_match_expected_type"
+    action: "type_check"
+    on_failure: "error"
+    message: "Type de valeur incorrect"
+
+  # Les references doivent pointer vers des ressources existantes
+  resource_references:
+    rule: "all_references_must_resolve"
+    action: "check_reference_targets"
+    on_failure: "error"
+    message: "Reference vers une ressource inexistante"
+
+# =============================================================================
+# PATTERNS INTERDITS (HALLUCINATIONS CONNUES)
+# =============================================================================
+
+forbidden_patterns:
+  # Attributs inventes frequemment
+  invented_attributes:
+    - pattern: "aws_vpc.*.enable_classiclink"
+      reason: "ClassicLink est deprecie et n'existe plus"
+
+    - pattern: "aws_ecs_service.*.launch_configuration"
+      reason: "ECS n'utilise pas launch_configuration (c'est capacity_provider ou launch_type)"
+
+    - pattern: "aws_rds_instance.*.engine_mode"
+      reason: "engine_mode est pour Aurora, pas RDS standard"
+
+    - pattern: "aws_lambda_function.*.vpc_id"
+      reason: "Lambda utilise vpc_config.subnet_ids, pas vpc_id directement"
+
+  # Types de ressources inventes
+  invented_resources:
+    - pattern: "aws_ecs_task"
+      reason: "Le type correct est aws_ecs_task_definition"
+
+    - pattern: "aws_rds_database"
+      reason: "Le type correct est aws_db_instance"
+
+    - pattern: "aws_security_group_rules"
+      reason: "Le type correct est aws_security_group_rule (singulier)"
+
+    - pattern: "aws_vpc_subnet"
+      reason: "Le type correct est aws_subnet"
+
+  # Data sources inventes
+  invented_data_sources:
+    - pattern: "data.aws_ecs_cluster_config"
+      reason: "N'existe pas - utiliser data.aws_ecs_cluster"
+
+    - pattern: "data.aws_rds_instances"
+      reason: "N'existe pas - utiliser data.aws_db_instance (singulier)"
+
+# =============================================================================
+# VERIFICATION DES MODULES FACTORY
+# =============================================================================
+
+factory_module_validation:
+  # Avant de generer un appel de module
+  pre_generation:
+    - step: "check_catalog"
+      description: "Verifier que le module existe dans le catalog"
+      api_call: "GET /catalog.json"
+      on_missing: "error"
+
+    - step: "fetch_metadata"
+      description: "Recuperer MODULE_METADATA.yaml"
+      api_call: "GET /modules/{path}/MODULE_METADATA.yaml"
+      on_missing: "error"
+
+    - step: "validate_version"
+      description: "Verifier que la version demandee existe"
+      on_invalid: "use_latest"
+
+  # Apres generation
+  post_generation:
+    - step: "validate_inputs"
+      description: "Verifier que tous les inputs required sont fournis"
+      source: "MODULE_METADATA.yaml -> inputs[required=true]"
+      on_failure: "error"
+
+    - step: "validate_input_types"
+      description: "Verifier les types des inputs"
+      on_failure: "error"
+
+    - step: "check_outputs_usage"
+      description: "Verifier que les outputs utilises existent"
+      source: "MODULE_METADATA.yaml -> outputs"
+      on_failure: "error"
+
+# =============================================================================
+# VALIDATION SYNTAXIQUE
+# =============================================================================
+
+syntax_validation:
+  # Terraform fmt
+  terraform_fmt:
+    enabled: true
+    on_failure: "auto_fix"
+
+  # Terraform validate
+  terraform_validate:
+    enabled: true
+    on_failure: "error"
+
+  # HCL syntax
+  hcl_syntax:
+    rules:
+      - "no_duplicate_resources"
+      - "no_duplicate_modules"
+      - "no_circular_dependencies"
+      - "valid_interpolation_syntax"
+      - "valid_for_each_keys"
+      - "valid_count_values"
+
+# =============================================================================
+# COHERENCE LOGIQUE
+# =============================================================================
+
+logical_validation:
+  # Dependances implicites
+  implicit_dependencies:
+    - resource: "aws_db_instance"
+      requires:
+        - "aws_db_subnet_group"
+        - "aws_security_group"
+      optional:
+        - "aws_kms_key"
+
+    - resource: "aws_ecs_service"
+      requires:
+        - "aws_ecs_cluster"
+        - "aws_ecs_task_definition"
+      optional:
+        - "aws_lb_target_group"
+        - "aws_service_discovery_service"
+
+    - resource: "aws_lb_listener"
+      requires:
+        - "aws_lb"
+        - "aws_lb_target_group"
+      optional:
+        - "aws_acm_certificate"
+
+  # Ordre de creation
+  creation_order:
+    - "VPC et Networking d'abord"
+    - "Security Groups"
+    - "IAM Roles"
+    - "KMS Keys"
+    - "Data stores (RDS, ElastiCache)"
+    - "Compute (ECS, Lambda, EC2)"
+    - "Load Balancers"
+    - "DNS"
+
+# =============================================================================
+# SOURCES DE VERITE
+# =============================================================================
+
+sources_of_truth:
+  # Registry Terraform officiel
+  terraform_registry:
+    url: "https://registry.terraform.io"
+    providers:
+      aws: "hashicorp/aws"
+      azure: "hashicorp/azurerm"
+      gcp: "hashicorp/google"
+
+  # Documentation officielle
+  provider_docs:
+    aws: "https://registry.terraform.io/providers/hashicorp/aws/latest/docs"
+    azure: "https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs"
+    gcp: "https://registry.terraform.io/providers/hashicorp/google/latest/docs"
+
+  # Factory catalog
+  factory_catalog:
+    url: "https://github.com/{org}/cloud_iac_factory/blob/main/catalog.json"
+
+# =============================================================================
+# ACTIONS SUR DETECTION D'HALLUCINATION
+# =============================================================================
+
+on_hallucination_detected:
+  actions:
+    - log_warning
+    - increment_hallucination_counter
+    - attempt_correction
+
+  correction_strategies:
+    # Chercher l'attribut correct
+    unknown_attribute:
+      - "search_provider_documentation"
+      - "suggest_similar_attribute"
+      - "remove_if_not_required"
+
+    # Chercher le type correct
+    unknown_resource_type:
+      - "search_provider_documentation"
+      - "suggest_similar_type"
+      - "fail_with_explanation"
+
+    # Module non trouve
+    unknown_module:
+      - "search_factory_catalog"
+      - "suggest_similar_module"
+      - "generate_inline_if_simple"
+      - "fail_with_explanation"
+
+  # Seuil d'echec
+  failure_threshold:
+    max_hallucinations: 0  # Zero tolerance en mode strict
+    action_on_threshold: "abort_generation"

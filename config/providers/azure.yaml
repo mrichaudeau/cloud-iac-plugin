@@ -1,0 +1,231 @@
+# Configuration specifique Azure
+# Versions, services disponibles, regions
+
+provider:
+  name: "azure"
+  display_name: "Microsoft Azure"
+
+# Versions
+versions:
+  terraform: ">= 1.5.0"
+  provider: "~> 3.0"
+
+# Regions supportees
+regions:
+  europe:
+    - id: "westeurope"
+      name: "West Europe (Netherlands)"
+      default: true
+    - id: "northeurope"
+      name: "North Europe (Ireland)"
+    - id: "francecentral"
+      name: "France Central (Paris)"
+    - id: "germanywestcentral"
+      name: "Germany West Central (Frankfurt)"
+    - id: "uksouth"
+      name: "UK South (London)"
+    - id: "swedencentral"
+      name: "Sweden Central (Gavle)"
+
+  north_america:
+    - id: "eastus"
+      name: "East US (Virginia)"
+    - id: "eastus2"
+      name: "East US 2 (Virginia)"
+    - id: "westus2"
+      name: "West US 2 (Washington)"
+    - id: "westus3"
+      name: "West US 3 (Arizona)"
+    - id: "centralus"
+      name: "Central US (Iowa)"
+
+  asia_pacific:
+    - id: "southeastasia"
+      name: "Southeast Asia (Singapore)"
+    - id: "australiaeast"
+      name: "Australia East (Sydney)"
+    - id: "japaneast"
+      name: "Japan East (Tokyo)"
+
+# Categories de modules
+categories:
+  networking:
+    - virtual_network
+    - subnet
+    - network_security_group
+    - application_gateway
+    - load_balancer
+    - dns_zone
+    - private_dns_zone
+    - front_door
+    - nat_gateway
+    - private_endpoint
+    - virtual_network_peering
+
+  compute:
+    - virtual_machine
+    - virtual_machine_scale_set
+    - container_instance
+    - container_registry
+    - kubernetes_cluster  # AKS
+    - function_app
+    - app_service
+    - batch_account
+
+  data:
+    - sql_server
+    - sql_database
+    - postgresql_flexible_server
+    - mysql_flexible_server
+    - cosmosdb_account
+    - storage_account
+    - redis_cache
+    - cognitive_account
+
+  security:
+    - key_vault
+    - key_vault_secret
+    - managed_identity
+    - role_assignment
+    - application_security_group
+    - web_application_firewall_policy
+
+  messaging:
+    - servicebus_namespace
+    - servicebus_queue
+    - servicebus_topic
+    - eventgrid_topic
+    - eventhub_namespace
+
+  observability:
+    - log_analytics_workspace
+    - application_insights
+    - monitor_metric_alert
+    - monitor_action_group
+    - monitor_diagnostic_setting
+
+  governance:
+    - policy_definition
+    - policy_assignment
+    - management_lock
+    - cost_management_budget
+    - security_center_subscription_pricing
+    - defender_for_cloud
+
+# Services de gouvernance obligatoires
+mandatory_governance:
+  all_environments:
+    - log_analytics_workspace
+    - key_vault
+    - managed_identity
+    - cost_management_budget
+    - monitor_diagnostic_setting
+
+  staging_prod:
+    - security_center_subscription_pricing
+    - policy_assignment
+    - defender_for_cloud
+    - storage_account  # pour les logs
+
+  prod_only:
+    - web_application_firewall_policy  # si internet
+    - management_lock
+
+# Ports sensibles
+sensitive_ports:
+  - port: 22
+    service: "SSH"
+  - port: 23
+    service: "Telnet"
+  - port: 3389
+    service: "RDP"
+  - port: 1433
+    service: "MSSQL"
+  - port: 5432
+    service: "PostgreSQL"
+  - port: 3306
+    service: "MySQL"
+  - port: 27017
+    service: "MongoDB"
+  - port: 6379
+    service: "Redis"
+  - port: 9200
+    service: "Elasticsearch"
+
+# Abreviations de nommage
+naming_abbreviations:
+  virtual_network: "vnet"
+  subnet: "snet"
+  network_security_group: "nsg"
+  application_gateway: "agw"
+  load_balancer: "lb"
+  resource_group: "rg"
+  storage_account: "st"
+  key_vault: "kv"
+  virtual_machine: "vm"
+  virtual_machine_scale_set: "vmss"
+  kubernetes_cluster: "aks"
+  container_registry: "acr"
+  container_instance: "aci"
+  function_app: "func"
+  app_service: "app"
+  sql_server: "sql"
+  sql_database: "sqldb"
+  postgresql: "psql"
+  mysql: "mysql"
+  cosmosdb: "cosmos"
+  redis_cache: "redis"
+  servicebus: "sb"
+  eventhub: "evh"
+  eventgrid: "evg"
+  log_analytics: "log"
+  application_insights: "appi"
+  front_door: "fd"
+  private_endpoint: "pe"
+  managed_identity: "id"
+
+# SKUs recommandes par environnement
+skus:
+  virtual_machine:
+    dev: ["Standard_B2s", "Standard_B2ms"]
+    staging: ["Standard_D2s_v5", "Standard_D4s_v5"]
+    prod: ["Standard_D4s_v5", "Standard_D8s_v5", "Standard_E4s_v5"]
+
+  sql_database:
+    dev: ["Basic", "S0"]
+    staging: ["S1", "S2"]
+    prod: ["S3", "P1", "P2"]
+
+  postgresql_flexible:
+    dev: ["B_Standard_B1ms"]
+    staging: ["GP_Standard_D2s_v3"]
+    prod: ["GP_Standard_D4s_v3", "GP_Standard_D8s_v3"]
+
+  redis_cache:
+    dev: ["Basic_C0", "Basic_C1"]
+    staging: ["Standard_C1", "Standard_C2"]
+    prod: ["Premium_P1", "Premium_P2"]
+
+  aks:
+    dev: ["Standard_B2s"]
+    staging: ["Standard_D2s_v5"]
+    prod: ["Standard_D4s_v5", "Standard_D8s_v5"]
+
+# Configuration specifique Azure
+azure_specific:
+  # Resource group obligatoire
+  require_resource_group: true
+
+  # Zones de disponibilite
+  availability_zones:
+    westeurope: ["1", "2", "3"]
+    northeurope: ["1", "2", "3"]
+    francecentral: ["1", "2", "3"]
+    eastus: ["1", "2", "3"]
+    eastus2: ["1", "2", "3"]
+    westus2: ["1", "2", "3"]
+
+  # Tags reserves
+  reserved_tags:
+    - "hidden-*"
+    - "ms-resource-usage"

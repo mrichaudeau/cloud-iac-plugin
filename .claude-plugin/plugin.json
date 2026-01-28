@@ -1,0 +1,8 @@
+{
+  "name": "iac",
+  "description": "Generate production-ready Terraform infrastructure from architecture schemas",
+  "version": "0.1.0",
+  "author": {
+    "name": "Silamir"
+  }
+}

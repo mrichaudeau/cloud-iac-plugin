@@ -1,0 +1,175 @@
+# Exemple de schema YAML structure
+# Ce format est directement parsable par le plugin
+
+schema_version: "1.0"
+
+# Metadata du projet
+metadata:
+  project: "dataplatform"
+  description: "Data analytics platform"
+  owner: "data-team"
+  cost_center: "DATA-001"
+
+# Contexte de deploiement
+context:
+  provider: "aws"
+  environment: "prod"
+  region: "eu-west-1"
+  criticality: "high"
+
+# Composants d'infrastructure
+components:
+  # Networking
+  - type: "vpc"
+    name: "main"
+    config:
+      cidr: "10.0.0.0/16"
+      az_count: 3
+      enable_nat_gateway: true
+      single_nat_gateway: false
+
+  # Data Lake
+  - type: "s3_bucket"
+    name: "data-lake-raw"
+    config:
+      versioning: true
+      lifecycle:
+        transition_glacier_days: 90
+        expiration_days: 2555  # 7 years
+      intelligent_tiering: true
+
+  - type: "s3_bucket"
+    name: "data-lake-processed"
+    config:
+      versioning: true
+      intelligent_tiering: true
+
+  # Database
+  - type: "rds_aurora"
+    name: "analytics"
+    config:
+      engine: "aurora-postgresql"
+      engine_version: "15.4"
+      instance_class: "db.r6g.xlarge"
+      instances: 3
+      serverless_v2:
+        min_capacity: 0.5
+        max_capacity: 16
+
+  # Data Warehouse
+  - type: "redshift_cluster"
+    name: "warehouse"
+    config:
+      node_type: "ra3.xlplus"
+      number_of_nodes: 2
+      enhanced_vpc_routing: true
+      encrypted: true
+
+  # Streaming
+  - type: "kinesis_stream"
+    name: "events"
+    config:
+      shard_count: 4
+      retention_period: 168  # 7 days
+
+  - type: "kinesis_firehose"
+    name: "events-to-s3"
+    config:
+      destination: "s3"
+      s3_bucket: "data-lake-raw"
+      buffer_size: 128
+      buffer_interval: 300
+
+  # Processing
+  - type: "lambda_function"
+    name: "data-transformer"
+    config:
+      runtime: "python3.11"
+      memory: 1024
+      timeout: 300
+      vpc_config: true
+      environment:
+        BUCKET_NAME: "${s3_bucket.data-lake-processed.id}"
+
+  - type: "glue_job"
+    name: "etl-daily"
+    config:
+      type: "glueetl"
+      glue_version: "4.0"
+      worker_type: "G.1X"
+      number_of_workers: 10
+
+  # Orchestration
+  - type: "step_functions"
+    name: "data-pipeline"
+    config:
+      type: "STANDARD"
+
+  - type: "eventbridge_rule"
+    name: "daily-etl-trigger"
+    config:
+      schedule_expression: "cron(0 2 * * ? *)"
+      target: "step_functions.data-pipeline"
+
+  # Analytics
+  - type: "athena_workgroup"
+    name: "analysts"
+    config:
+      enforce_workgroup_configuration: true
+      publish_cloudwatch_metrics: true
+      bytes_scanned_cutoff_per_query: 10737418240  # 10 GB
+
+  - type: "quicksight"
+    name: "dashboards"
+    config:
+      edition: "ENTERPRISE"
+      data_sources:
+        - athena
+        - redshift
+
+  # Secrets
+  - type: "secrets_manager"
+    name: "database-credentials"
+    config:
+      rotation_enabled: true
+      rotation_days: 30
+
+  # Monitoring
+  - type: "cloudwatch_dashboard"
+    name: "data-platform"
+    config:
+      widgets:
+        - type: "metric"
+          title: "Kinesis Throughput"
+        - type: "metric"
+          title: "Lambda Errors"
+        - type: "metric"
+          title: "Glue Job Status"
+
+# Relations entre composants
+relations:
+  - from: "kinesis_stream.events"
+    to: "kinesis_firehose.events-to-s3"
+    type: "data_flow"
+
+  - from: "kinesis_firehose.events-to-s3"
+    to: "s3_bucket.data-lake-raw"
+    type: "data_flow"
+
+  - from: "lambda_function.data-transformer"
+    to: "s3_bucket.data-lake-processed"
+    type: "data_flow"
+
+  - from: "glue_job.etl-daily"
+    to: "rds_aurora.analytics"
+    type: "data_flow"
+
+  - from: "redshift_cluster.warehouse"
+    to: "s3_bucket.data-lake-processed"
+    type: "data_source"
+
+# Tags additionnels
+additional_tags:
+  DataClassification: "internal"
+  Compliance: "SOC2"
+  BackupRequired: "true"

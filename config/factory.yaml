@@ -1,0 +1,64 @@
+# Configuration Cloud IaC Factory
+# Ce fichier configure la connexion a la factory GitHub
+
+factory:
+  # Repository GitHub de la factory
+  repository: "org/cloud_iac_factory"
+  branch: "main"
+
+  # Methode d'authentification
+  # Utilise la variable d'environnement GITHUB_TOKEN
+  auth_method: "token"
+
+  # URLs GitHub
+  base_url: "https://github.com"
+  api_url: "https://api.github.com"
+  raw_url: "https://raw.githubusercontent.com"
+
+  # Chemins dans le repository
+  paths:
+    catalog: "catalog.json"
+    modules: "modules"
+    patterns: "patterns"
+    policies: "policies"
+
+  # Configuration du cache local
+  cache:
+    enabled: true
+    ttl: 300  # secondes (5 minutes)
+    directory: "~/.iac-factory-cache"
+
+  # Configuration des PR
+  pull_request:
+    # Template du titre
+    title_template: "feat(module): Add {module_path} v{version}"
+
+    # Labels a ajouter
+    labels:
+      - "module"
+      - "auto-generated"
+
+    # Reviewers par defaut (optionnel)
+    # reviewers:
+    #   - "username1"
+    #   - "username2"
+
+    # Draft PR par defaut
+    draft: false
+
+  # Validation avant publication
+  validation:
+    # Verifier terraform fmt
+    require_fmt: true
+
+    # Verifier terraform validate
+    require_validate: true
+
+    # Verifier MODULE_METADATA.yaml
+    require_metadata: true
+
+    # Verifier README.md
+    require_readme: true
+
+    # Verifier examples/
+    require_examples: false

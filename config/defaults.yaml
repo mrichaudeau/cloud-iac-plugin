@@ -1,0 +1,163 @@
+# Valeurs par defaut pour la generation d'infrastructure
+# Ces valeurs sont utilisees quand non specifiees par l'utilisateur
+
+# Contexte par defaut
+context:
+  provider: "aws"
+  region: "eu-west-1"
+  environment: "prod"  # Plus securise par defaut
+
+# Naming
+naming:
+  separator: "-"
+  case: "lower"
+  max_length: 63
+
+# Tags obligatoires
+mandatory_tags:
+  - "Project"
+  - "Environment"
+  - "Owner"
+  - "CostCenter"
+  - "ManagedBy"
+
+# Valeurs par environnement
+environments:
+  dev:
+    az_count: 2
+    nat_gateway_count: 1
+    enable_flow_logs: false
+    enable_multi_az: false
+    backup_retention_days: 7
+    log_retention_days: 7
+    deletion_protection: false
+    kms_type: "aws_managed"
+
+  staging:
+    az_count: 2
+    nat_gateway_count: 1
+    enable_flow_logs: true
+    enable_multi_az: false
+    backup_retention_days: 14
+    log_retention_days: 30
+    deletion_protection: false
+    kms_type: "cmk"
+
+  prod:
+    az_count: 3
+    nat_gateway_count: 3  # per AZ
+    enable_flow_logs: true
+    enable_multi_az: true
+    backup_retention_days: 30
+    log_retention_days: 90
+    deletion_protection: true
+    kms_type: "cmk"
+
+# Gouvernance par defaut
+governance:
+  # Toujours inclus
+  always:
+    - iam_baseline
+    - budgets
+    - cloudtrail
+    - guardduty
+    - kms_keys
+    - cloudwatch_logs
+    - sns_alerts
+
+  # Inclus en staging/prod
+  staging_and_prod:
+    - vpc_flow_logs
+    - security_hub
+    - config_recorder
+    - config_rules
+    - cloudwatch_alarms
+    - aws_backup
+
+  # Inclus en prod uniquement
+  prod_only:
+    - waf  # si internet exposure
+    - multi_az
+    - cross_region_backup  # si high/critical
+
+# Securite par defaut
+security:
+  # TLS minimum
+  min_tls_version: "1.2"
+  ssl_policy: "ELBSecurityPolicy-TLS13-1-2-2021-06"
+
+  # Encryption
+  encryption_at_rest: true
+  encryption_in_transit: true
+  kms_key_rotation: true
+
+  # EC2/ECS
+  imdsv2_required: true
+
+  # S3
+  s3_block_public_access: true
+  s3_versioning: true
+
+  # RDS
+  rds_publicly_accessible: false
+  rds_storage_encrypted: true
+
+# Budget par defaut (en USD)
+budget:
+  dev:
+    monthly: 500
+    alert_thresholds: [80, 100]
+  staging:
+    monthly: 1000
+    alert_thresholds: [50, 80, 100]
+  prod:
+    monthly: 5000
+    alert_thresholds: [50, 80, 100, 120]
+
+# CIDR par defaut
+networking:
+  vpc_cidr: "10.0.0.0/16"
+  public_subnets:
+    - "10.0.1.0/24"
+    - "10.0.2.0/24"
+    - "10.0.3.0/24"
+  private_subnets:
+    - "10.0.11.0/24"
+    - "10.0.12.0/24"
+    - "10.0.13.0/24"
+  database_subnets:
+    - "10.0.21.0/24"
+    - "10.0.22.0/24"
+    - "10.0.23.0/24"
+
+# Instance types par defaut
+instance_types:
+  rds:
+    dev: "db.t3.micro"
+    staging: "db.t3.small"
+    prod: "db.r6g.large"
+
+  elasticache:
+    dev: "cache.t3.micro"
+    staging: "cache.t3.small"
+    prod: "cache.r6g.large"
+
+  ec2:
+    dev: "t3.micro"
+    staging: "t3.small"
+    prod: "m5.large"
+
+# ECS/Fargate par defaut
+fargate:
+  dev:
+    cpu: 256
+    memory: 512
+    desired_count: 1
+  staging:
+    cpu: 512
+    memory: 1024
+    desired_count: 2
+  prod:
+    cpu: 1024
+    memory: 2048
+    desired_count: 3

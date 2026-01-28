@@ -1,0 +1,349 @@
+# KMS Configuration Template
+# Governance component - automatically injected for all environments
+# Variables: {{project}}, {{environment}}, {{region}}
+
+# ==============================================================================
+# MAIN KMS KEY
+# ==============================================================================
+
+resource "aws_kms_key" "main" {
+  description             = "Main KMS key for ${var.project} ${var.environment}"
+  deletion_window_in_days = var.environment == "prod" ? 30 : 7
+  enable_key_rotation     = true
+  multi_region            = var.environment == "prod"
+
+  policy = data.aws_iam_policy_document.kms_policy.json
+
+  tags = merge(local.common_tags, {
+    Name    = "${local.name_prefix}-main"
+    Purpose = "General encryption"
+  })
+}
+
+resource "aws_kms_alias" "main" {
+  name          = "alias/${local.name_prefix}-main"
+  target_key_id = aws_kms_key.main.key_id
+}
+
+# ==============================================================================
+# KMS KEY POLICY
+# ==============================================================================
+
+data "aws_iam_policy_document" "kms_policy" {
+  # Root account access
+  statement {
+    sid    = "EnableRootAccountPermissions"
+    effect = "Allow"
+
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+    }
+
+    actions   = ["kms:*"]
+    resources = ["*"]
+  }
+
+  # Allow CloudWatch Logs
+  statement {
+    sid    = "AllowCloudWatchLogs"
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["logs.${var.region}.amazonaws.com"]
+    }
+
+    actions = [
+      "kms:Encrypt*",
+      "kms:Decrypt*",
+      "kms:ReEncrypt*",
+      "kms:GenerateDataKey*",
+      "kms:Describe*"
+    ]
+
+    resources = ["*"]
+
+    condition {
+      test     = "ArnLike"
+      variable = "kms:EncryptionContext:aws:logs:arn"
+      values   = ["arn:aws:logs:${var.region}:${data.aws_caller_identity.current.account_id}:*"]
+    }
+  }
+
+  # Allow SNS
+  statement {
+    sid    = "AllowSNS"
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["sns.amazonaws.com"]
+    }
+
+    actions = [
+      "kms:GenerateDataKey*",
+      "kms:Decrypt"
+    ]
+
+    resources = ["*"]
+  }
+
+  # Allow S3
+  statement {
+    sid    = "AllowS3"
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["s3.amazonaws.com"]
+    }
+
+    actions = [
+      "kms:GenerateDataKey*",
+      "kms:Decrypt"
+    ]
+
+    resources = ["*"]
+  }
+
+  # Allow CloudTrail
+  statement {
+    sid    = "AllowCloudTrail"
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["cloudtrail.amazonaws.com"]
+    }
+
+    actions = [
+      "kms:GenerateDataKey*",
+      "kms:DescribeKey"
+    ]
+
+    resources = ["*"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "AWS:SourceArn"
+      values   = ["arn:aws:cloudtrail:${var.region}:${data.aws_caller_identity.current.account_id}:trail/*"]
+    }
+  }
+
+  # Allow RDS
+  statement {
+    sid    = "AllowRDS"
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["rds.amazonaws.com"]
+    }
+
+    actions = [
+      "kms:Encrypt*",
+      "kms:Decrypt*",
+      "kms:ReEncrypt*",
+      "kms:GenerateDataKey*",
+      "kms:CreateGrant",
+      "kms:DescribeKey"
+    ]
+
+    resources = ["*"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "kms:CallerAccount"
+      values   = [data.aws_caller_identity.current.account_id]
+    }
+  }
+
+  # Allow Secrets Manager
+  statement {
+    sid    = "AllowSecretsManager"
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["secretsmanager.amazonaws.com"]
+    }
+
+    actions = [
+      "kms:Encrypt*",
+      "kms:Decrypt*",
+      "kms:ReEncrypt*",
+      "kms:GenerateDataKey*",
+      "kms:CreateGrant",
+      "kms:DescribeKey"
+    ]
+
+    resources = ["*"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "kms:CallerAccount"
+      values   = [data.aws_caller_identity.current.account_id]
+    }
+  }
+}
+
+# ==============================================================================
+# DATABASE KMS KEY (SEPARATE FOR RDS)
+# ==============================================================================
+
+{{#if has_rds}}
+resource "aws_kms_key" "database" {
+  description             = "KMS key for database encryption - ${var.project} ${var.environment}"
+  deletion_window_in_days = var.environment == "prod" ? 30 : 7
+  enable_key_rotation     = true
+
+  policy = data.aws_iam_policy_document.kms_database_policy.json
+
+  tags = merge(local.common_tags, {
+    Name    = "${local.name_prefix}-database"
+    Purpose = "Database encryption"
+  })
+}
+
+resource "aws_kms_alias" "database" {
+  name          = "alias/${local.name_prefix}-database"
+  target_key_id = aws_kms_key.database.key_id
+}
+
+data "aws_iam_policy_document" "kms_database_policy" {
+  statement {
+    sid    = "EnableRootAccountPermissions"
+    effect = "Allow"
+
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+    }
+
+    actions   = ["kms:*"]
+    resources = ["*"]
+  }
+
+  statement {
+    sid    = "AllowRDSToUseTheKey"
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["rds.amazonaws.com"]
+    }
+
+    actions = [
+      "kms:Encrypt*",
+      "kms:Decrypt*",
+      "kms:ReEncrypt*",
+      "kms:GenerateDataKey*",
+      "kms:CreateGrant",
+      "kms:ListGrants",
+      "kms:DescribeKey"
+    ]
+
+    resources = ["*"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "kms:CallerAccount"
+      values   = [data.aws_caller_identity.current.account_id]
+    }
+  }
+}
+{{/if}}
+
+# ==============================================================================
+# SECRETS KMS KEY (SEPARATE FOR SECRETS MANAGER)
+# ==============================================================================
+
+{{#if has_secrets}}
+resource "aws_kms_key" "secrets" {
+  description             = "KMS key for secrets - ${var.project} ${var.environment}"
+  deletion_window_in_days = var.environment == "prod" ? 30 : 7
+  enable_key_rotation     = true
+
+  policy = data.aws_iam_policy_document.kms_secrets_policy.json
+
+  tags = merge(local.common_tags, {
+    Name    = "${local.name_prefix}-secrets"
+    Purpose = "Secrets encryption"
+  })
+}
+
+resource "aws_kms_alias" "secrets" {
+  name          = "alias/${local.name_prefix}-secrets"
+  target_key_id = aws_kms_key.secrets.key_id
+}
+
+data "aws_iam_policy_document" "kms_secrets_policy" {
+  statement {
+    sid    = "EnableRootAccountPermissions"
+    effect = "Allow"
+
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+    }
+
+    actions   = ["kms:*"]
+    resources = ["*"]
+  }
+
+  statement {
+    sid    = "AllowSecretsManagerToUseTheKey"
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["secretsmanager.amazonaws.com"]
+    }
+
+    actions = [
+      "kms:Encrypt*",
+      "kms:Decrypt*",
+      "kms:ReEncrypt*",
+      "kms:GenerateDataKey*",
+      "kms:CreateGrant",
+      "kms:DescribeKey"
+    ]
+
+    resources = ["*"]
+  }
+}
+{{/if}}
+
+# ==============================================================================
+# OUTPUTS
+# ==============================================================================
+
+output "kms_key_arn" {
+  description = "Main KMS key ARN"
+  value       = aws_kms_key.main.arn
+}
+
+output "kms_key_id" {
+  description = "Main KMS key ID"
+  value       = aws_kms_key.main.key_id
+}
+
+output "kms_key_alias" {
+  description = "Main KMS key alias"
+  value       = aws_kms_alias.main.name
+}
+
+{{#if has_rds}}
+output "kms_database_key_arn" {
+  description = "Database KMS key ARN"
+  value       = aws_kms_key.database.arn
+}
+{{/if}}
+
+{{#if has_secrets}}
+output "kms_secrets_key_arn" {
+  description = "Secrets KMS key ARN"
+  value       = aws_kms_key.secrets.arn
+}
+{{/if}}

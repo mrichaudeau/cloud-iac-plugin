@@ -1,0 +1,188 @@
+# Cloud IaC Plugin Manifest
+# Configuration principale du plugin Claude Code
+
+schema_version: "1.0"
+plugin_version: "0.1.0"
+
+# Metadata
+metadata:
+  name: "cloud-iac-generator"
+  display_name: "Cloud IaC Generator"
+  description: "Generate production-ready Terraform infrastructure from architecture schemas"
+  author: "Silamir"
+  repository: "https://github.com/silamir/cloud-iac-plugin"
+  license: "MIT"
+
+# Skills disponibles
+skills:
+  - name: "generate-infra"
+    file: "skills/generate-infra.md"
+    description: "Generate Terraform from architecture schema"
+    trigger: "/generate-infra"
+
+  - name: "publish-module"
+    file: "skills/publish-module.md"
+    description: "Publish module to factory"
+    trigger: "/publish-module"
+
+  - name: "import-module"
+    file: "skills/import-module.md"
+    description: "Import module from factory"
+    trigger: "/import-module"
+
+  - name: "validate-infra"
+    file: "skills/validate-infra.md"
+    description: "Validate infrastructure configuration"
+    trigger: "/validate-infra"
+
+  - name: "estimate-cost"
+    file: "skills/estimate-cost.md"
+    description: "Estimate infrastructure costs"
+    trigger: "/estimate-cost"
+
+# Agents disponibles
+agents:
+  - name: "tf-generator"
+    file: "agents/tf-generator.md"
+    description: "Terraform code generation"
+
+  - name: "security-reviewer"
+    file: "agents/security-reviewer.md"
+    description: "Security validation"
+
+  - name: "factory-sync"
+    file: "agents/factory-sync.md"
+    description: "Factory synchronization"
+
+  - name: "schema-parser"
+    file: "agents/schema-parser.md"
+    description: "Schema parsing"
+
+# Configuration
+config:
+  defaults: "config/defaults.yaml"
+  validation_schema: "config/validation-schema.yaml"
+  anti_hallucination: "config/anti-hallucination.yaml"
+
+  providers:
+    aws: "config/providers/aws.yaml"
+    azure: "config/providers/azure.yaml"
+    gcp: "config/providers/gcp.yaml"
+
+  factory: "config/factory.yaml"
+
+# Templates
+templates:
+  base:
+    - "templates/_backend.tf.tmpl"
+    - "templates/_providers.tf.tmpl"
+    - "templates/_variables.tf.tmpl"
+    - "templates/_locals.tf.tmpl"
+    - "templates/_outputs.tf.tmpl"
+    - "templates/module-call.tf.tmpl"
+
+  governance:
+    - "templates/governance/_cloudtrail.tf.tmpl"
+    - "templates/governance/_guardduty.tf.tmpl"
+    - "templates/governance/_budgets.tf.tmpl"
+    - "templates/governance/_kms.tf.tmpl"
+
+# Documentation
+documentation:
+  main: "README.md"
+  claude_instructions: "CLAUDE.md"
+  docs_folder: "docs/"
+
+# Supported input formats
+supported_inputs:
+  - extension: ".md"
+    parser: "markdown"
+    description: "Markdown architecture documents"
+
+  - extension: ".yaml"
+    parser: "yaml"
+    description: "YAML structured schemas"
+
+  - extension: ".yml"
+    parser: "yaml"
+    description: "YAML structured schemas"
+
+  - extension: ".json"
+    parser: "json"
+    description: "JSON structured schemas"
+
+  - extension: ".drawio"
+    parser: "drawio"
+    description: "Draw.io diagrams"
+
+  - extension: ".png"
+    parser: "image"
+    description: "Architecture diagram images"
+
+  - extension: ".jpg"
+    parser: "image"
+    description: "Architecture diagram images"
+
+  - extension: ".webp"
+    parser: "image"
+    description: "Architecture diagram images"
+
+# Supported providers
+supported_providers:
+  - name: "aws"
+    status: "stable"
+    terraform_provider: "hashicorp/aws"
+
+  - name: "azure"
+    status: "beta"
+    terraform_provider: "hashicorp/azurerm"
+
+  - name: "gcp"
+    status: "beta"
+    terraform_provider: "hashicorp/google"
+
+# Environment variables required
+environment_variables:
+  required:
+    - name: "GITHUB_TOKEN"
+      description: "GitHub token for factory access"
+
+  optional:
+    - name: "AWS_REGION"
+      description: "Default AWS region"
+      default: "eu-west-1"
+
+    - name: "TF_VAR_environment"
+      description: "Default environment"
+      default: "prod"
+
+# Hooks
+hooks:
+  pre_generation:
+    - "validate_input_schema"
+    - "check_factory_catalog"
+
+  post_generation:
+    - "terraform_fmt"
+    - "terraform_validate"
+    - "security_scan"
+    - "anti_hallucination_check"
+
+  pre_publish:
+    - "validate_module_structure"
+    - "check_module_metadata"
+    - "run_tests"
+
+  post_publish:
+    - "update_catalog"
+    - "invalidate_cache"
+    - "notify_slack"  # optional
+
+# Feature flags
+features:
+  auto_governance_injection: true
+  security_guardrails: true
+  cost_estimation: true
+  anti_hallucination: true
+  factory_integration: true
+  multi_provider: true

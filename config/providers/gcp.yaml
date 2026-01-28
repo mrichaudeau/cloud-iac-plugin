@@ -1,0 +1,251 @@
+# Configuration specifique GCP
+# Versions, services disponibles, regions
+
+provider:
+  name: "gcp"
+  display_name: "Google Cloud Platform"
+
+# Versions
+versions:
+  terraform: ">= 1.5.0"
+  provider: "~> 5.0"
+  provider_beta: "~> 5.0"
+
+# Regions supportees
+regions:
+  europe:
+    - id: "europe-west1"
+      name: "Belgium"
+      default: true
+    - id: "europe-west2"
+      name: "London"
+    - id: "europe-west3"
+      name: "Frankfurt"
+    - id: "europe-west4"
+      name: "Netherlands"
+    - id: "europe-west9"
+      name: "Paris"
+    - id: "europe-north1"
+      name: "Finland"
+
+  north_america:
+    - id: "us-east1"
+      name: "South Carolina"
+    - id: "us-east4"
+      name: "N. Virginia"
+    - id: "us-central1"
+      name: "Iowa"
+    - id: "us-west1"
+      name: "Oregon"
+    - id: "us-west2"
+      name: "Los Angeles"
+
+  asia_pacific:
+    - id: "asia-southeast1"
+      name: "Singapore"
+    - id: "asia-east1"
+      name: "Taiwan"
+    - id: "asia-northeast1"
+      name: "Tokyo"
+    - id: "australia-southeast1"
+      name: "Sydney"
+
+# Categories de modules
+categories:
+  networking:
+    - compute_network  # VPC
+    - compute_subnetwork
+    - compute_firewall
+    - compute_global_address
+    - compute_backend_service
+    - compute_url_map
+    - compute_target_https_proxy
+    - compute_global_forwarding_rule
+    - dns_managed_zone
+    - dns_record_set
+    - compute_router
+    - compute_router_nat
+    - service_networking_connection
+
+  compute:
+    - compute_instance
+    - compute_instance_group_manager
+    - container_cluster  # GKE
+    - container_node_pool
+    - cloudfunctions_function
+    - cloud_run_service
+    - cloud_run_v2_service
+    - compute_instance_template
+
+  data:
+    - sql_database_instance
+    - sql_database
+    - spanner_instance
+    - bigquery_dataset
+    - bigquery_table
+    - storage_bucket
+    - redis_instance
+    - memcache_instance
+    - firestore_database
+
+  security:
+    - kms_key_ring
+    - kms_crypto_key
+    - secret_manager_secret
+    - secret_manager_secret_version
+    - service_account
+    - project_iam_member
+    - compute_security_policy  # Cloud Armor
+
+  messaging:
+    - pubsub_topic
+    - pubsub_subscription
+    - cloudtasks_queue
+    - cloud_scheduler_job
+    - eventarc_trigger
+
+  observability:
+    - logging_project_sink
+    - logging_metric
+    - monitoring_alert_policy
+    - monitoring_notification_channel
+    - monitoring_dashboard
+    - monitoring_uptime_check_config
+
+  governance:
+    - org_policy
+    - project_service
+    - billing_budget
+    - scc_notification_config  # Security Command Center
+    - access_context_manager_access_policy
+
+# Services de gouvernance obligatoires
+mandatory_governance:
+  all_environments:
+    - logging_project_sink
+    - kms_key_ring
+    - kms_crypto_key
+    - service_account
+    - billing_budget
+
+  staging_prod:
+    - monitoring_alert_policy
+    - scc_notification_config
+    - access_context_manager_access_policy
+
+  prod_only:
+    - compute_security_policy  # Cloud Armor si internet
+    - org_policy
+
+# Ports sensibles (meme que les autres providers)
+sensitive_ports:
+  - port: 22
+    service: "SSH"
+  - port: 23
+    service: "Telnet"
+  - port: 3389
+    service: "RDP"
+  - port: 3306
+    service: "MySQL/CloudSQL"
+  - port: 5432
+    service: "PostgreSQL/CloudSQL"
+  - port: 1433
+    service: "MSSQL"
+  - port: 27017
+    service: "MongoDB"
+  - port: 6379
+    service: "Redis/Memorystore"
+  - port: 9200
+    service: "Elasticsearch"
+
+# Abreviations de nommage
+naming_abbreviations:
+  compute_network: "vpc"
+  compute_subnetwork: "subnet"
+  compute_firewall: "fw"
+  compute_instance: "vm"
+  compute_instance_group_manager: "mig"
+  container_cluster: "gke"
+  container_node_pool: "np"
+  cloud_run_service: "run"
+  cloudfunctions_function: "fn"
+  sql_database_instance: "sql"
+  storage_bucket: "gcs"
+  redis_instance: "redis"
+  memcache_instance: "memcache"
+  bigquery_dataset: "bq"
+  pubsub_topic: "topic"
+  pubsub_subscription: "sub"
+  kms_key_ring: "kr"
+  kms_crypto_key: "key"
+  secret_manager_secret: "secret"
+  service_account: "sa"
+  logging_project_sink: "sink"
+  monitoring_alert_policy: "alert"
+  compute_global_forwarding_rule: "lb"
+  dns_managed_zone: "dns"
+
+# Machine types recommandes par environnement
+machine_types:
+  compute_instance:
+    dev: ["e2-micro", "e2-small", "e2-medium"]
+    staging: ["e2-standard-2", "n2-standard-2"]
+    prod: ["n2-standard-4", "n2-standard-8", "c2-standard-4"]
+
+  gke_node:
+    dev: ["e2-medium", "e2-standard-2"]
+    staging: ["e2-standard-4", "n2-standard-4"]
+    prod: ["n2-standard-8", "n2-standard-16", "c2-standard-8"]
+
+# Tiers Cloud SQL
+cloud_sql_tiers:
+  dev: ["db-f1-micro", "db-g1-small"]
+  staging: ["db-custom-2-7680", "db-custom-4-15360"]
+  prod: ["db-custom-8-30720", "db-custom-16-61440"]
+
+# Configuration specifique GCP
+gcp_specific:
+  # Project obligatoire
+  require_project: true
+
+  # APIs a activer par defaut
+  required_apis:
+    all:
+      - "compute.googleapis.com"
+      - "iam.googleapis.com"
+      - "cloudresourcemanager.googleapis.com"
+      - "logging.googleapis.com"
+      - "monitoring.googleapis.com"
+      - "secretmanager.googleapis.com"
+      - "cloudkms.googleapis.com"
+
+    networking:
+      - "dns.googleapis.com"
+      - "servicenetworking.googleapis.com"
+
+    compute:
+      - "container.googleapis.com"  # GKE
+      - "run.googleapis.com"
+      - "cloudfunctions.googleapis.com"
+
+    data:
+      - "sqladmin.googleapis.com"
+      - "redis.googleapis.com"
+      - "bigquery.googleapis.com"
+      - "storage.googleapis.com"
+
+  # Labels reserves
+  reserved_labels:
+    - "goog-*"
+    - "google-*"
+
+  # Zones par region
+  zones_per_region:
+    europe-west1: ["b", "c", "d"]
+    europe-west2: ["a", "b", "c"]
+    europe-west3: ["a", "b", "c"]
+    europe-west4: ["a", "b", "c"]
+    europe-west9: ["a", "b", "c"]
+    us-east1: ["b", "c", "d"]
+    us-central1: ["a", "b", "c", "f"]
+    us-west1: ["a", "b", "c"]

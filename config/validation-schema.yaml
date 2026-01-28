@@ -1,0 +1,209 @@
+# Schema de validation des inputs
+# Utilise pour valider les schemas d'architecture avant generation
+
+schema_version: "1.0"
+
+# Validation du contexte
+context:
+  required:
+    - provider
+    - environment
+  optional:
+    - region
+    - project
+    - team
+    - cost_center
+
+  rules:
+    provider:
+      type: string
+      enum: ["aws", "azure", "gcp"]
+      default: "aws"
+
+    environment:
+      type: string
+      enum: ["dev", "staging", "prod"]
+      default: "prod"  # Default securise
+
+    region:
+      type: string
+      pattern: "^[a-z]{2,}-[a-z]+-[0-9]+$"  # AWS style
+      # ou pattern Azure: "^[a-z]+$"
+      # ou pattern GCP: "^[a-z]+-[a-z]+[0-9]$"
+
+    project:
+      type: string
+      pattern: "^[a-z][a-z0-9-]{1,20}$"
+      min_length: 2
+      max_length: 21
+
+# Validation des composants
+components:
+  required_fields:
+    - type
+
+  optional_fields:
+    - name
+    - config
+    - depends_on
+
+  rules:
+    type:
+      type: string
+      pattern: "^[a-z_]+(/[a-z_]+)?$"
+      description: "Type de composant (ex: vpc, ecs_service, networking/alb)"
+
+    name:
+      type: string
+      pattern: "^[a-z][a-z0-9-]{0,30}$"
+      max_length: 31
+
+    config:
+      type: object
+      # Validation specifique par type de composant
+
+# Types de composants connus
+known_component_types:
+  networking:
+    - vpc
+    - security_group
+    - alb
+    - nlb
+    - route53_zone
+    - route53_records
+    - cloudfront
+    - nat_gateway
+
+  compute:
+    - ec2_instance
+    - ec2_asg
+    - ecs_cluster
+    - ecs_service
+    - eks_cluster
+    - lambda_function
+
+  data:
+    - rds_instance
+    - rds_aurora
+    - dynamodb_table
+    - s3_bucket
+    - elasticache
+
+  security:
+    - kms_key
+    - secrets_manager
+    - iam_role
+    - iam_policy
+
+  messaging:
+    - sqs_queue
+    - sns_topic
+    - eventbridge_rule
+
+# Regles de validation croisee
+cross_validation:
+  # ECS requiert VPC
+  - condition:
+      has_component: "ecs_service"
+    requires:
+      - vpc
+
+  # RDS requiert VPC et KMS
+  - condition:
+      has_component: "rds_instance"
+    requires:
+      - vpc
+      - kms_key  # sera enrichi automatiquement
+
+  # Lambda avec VPC requiert subnets
+  - condition:
+      component: "lambda_function"
+      config_has: "vpc_config"
+    requires:
+      - vpc
+
+  # ALB requiert VPC et security_group
+  - condition:
+      has_component: "alb"
+    requires:
+      - vpc
+      - security_group
+
+# Patterns interdits
+forbidden_patterns:
+  # Pas d'acces public aux bases de donnees
+  - pattern:
+      component: "rds_instance"
+      config:
+        publicly_accessible: true
+    message: "RDS ne doit jamais etre accessible publiquement"
+    severity: error
+
+  # Pas de security group 0.0.0.0/0 sur ports sensibles
+  - pattern:
+      component: "security_group"
+      config:
+        ingress:
+          cidr_blocks: "0.0.0.0/0"
+          port: [22, 3389, 3306, 5432, 27017, 6379]
+    message: "Port sensible expose a 0.0.0.0/0"
+    severity: error
+
+  # Pas de credentials en dur
+  - pattern:
+      any_component: true
+      config_contains:
+        - "password"
+        - "secret"
+        - "api_key"
+        - "access_key"
+    message: "Credentials detectes dans la configuration"
+    severity: error
+
+# Warnings (non bloquants)
+warnings:
+  # S3 sans versioning
+  - condition:
+      component: "s3_bucket"
+      config:
+        versioning: false
+    message: "S3 bucket sans versioning - recommande pour prod"
+    environments: ["staging", "prod"]
+
+  # RDS sans multi-AZ en prod
+  - condition:
+      component: "rds_instance"
+      config:
+        multi_az: false
+    message: "RDS sans Multi-AZ - recommande pour prod"
+    environments: ["prod"]
+
+  # ECS sans autoscaling
+  - condition:
+      component: "ecs_service"
+      config_missing: "autoscaling"
+    message: "ECS service sans autoscaling configure"
+    environments: ["staging", "prod"]
+
+# Validation des outputs attendus
+expected_outputs:
+  vpc:
+    - vpc_id
+    - public_subnets
+    - private_subnets
+    - database_subnets
+
+  ecs_cluster:
+    - cluster_id
+    - cluster_name
+    - cluster_arn
+
+  rds_instance:
+    - endpoint
+    - port
+    - database_name
+
+  alb:
+    - dns_name
+    - zone_id
+    - arn
