@@ -6,9 +6,6 @@
     "name": "Maxime RICHAUDEAU"
   },
   "homepage": "https://github.com/mrichaudeau/cloud-iac-plugin",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/mrichaudeau/cloud-iac-plugin"
-  },
+  "repository": "https://github.com/mrichaudeau/cloud-iac-plugin",
   "license": "MIT"
 }
