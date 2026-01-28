@@ -21,11 +21,13 @@ Ce plugin permet de generer des infrastructures Terraform **completes et product
 
 | Skill | Description | Usage |
 |-------|-------------|-------|
-| `/generate-infra` | Genere infrastructure Terraform | `/generate-infra "App web Django avec PostgreSQL"` |
-| `/publish-module` | Publie module vers factory | `/publish-module ./modules/my-module` |
-| `/import-module` | Importe module depuis factory | `/import-module aws/networking/vpc` |
-| `/validate-infra` | Valide securite et compliance | `/validate-infra ./infrastructure` |
-| `/estimate-cost` | Estime les couts mensuels | `/estimate-cost ./infrastructure` |
+| `/iac:generate-infra` | Genere infrastructure Terraform | `/iac:generate-infra "App web Django avec PostgreSQL"` |
+| `/iac:publish-module` | Publie module vers factory | `/iac:publish-module ./modules/my-module` |
+| `/iac:import-module` | Importe module depuis factory | `/iac:import-module aws/networking/vpc` |
+| `/iac:validate-infra` | Valide securite et compliance | `/iac:validate-infra ./infrastructure` |
+| `/iac:estimate-cost` | Estime les couts mensuels | `/iac:estimate-cost ./infrastructure` |
+
+> **Note:** Les skills utilisent le namespace `iac:` defini dans `.claude-plugin/plugin.json`
 
 ---
 
@@ -261,7 +263,7 @@ module "vpc" {
 ```
 
 ### Publier vers la Factory
-Apres validation manuelle, utiliser `/publish-module` pour creer une PR vers la factory.
+Apres validation manuelle, utiliser `/iac:publish-module` pour creer une PR vers la factory.
 
 ---
 
