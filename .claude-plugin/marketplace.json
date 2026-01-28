@@ -1,12 +1,15 @@
 {
   "name": "mrichaudeau-cloud-iac-plugin",
   "description": "Marketplace for Cloud IaC Generator plugin",
+  "owner": {
+    "name": "Maxime RICHAUDEAU"
+  },
   "plugins": [
     {
       "name": "iac",
+      "source": ".",
       "description": "Generate production-ready Terraform infrastructure from architecture schemas",
       "version": "0.1.0",
-      "path": ".",
       "tags": ["terraform", "infrastructure", "aws", "iac", "devops"],
       "author": {
         "name": "Maxime RICHAUDEAU"
