@@ -29,35 +29,85 @@ export AWS_REGION="eu-west-1"
 
 ## Installation du Plugin
 
-### Option 1 : Clone local (recommandé pour le développement)
+### Option 1 : Via Marketplace GitHub (recommandé pour les utilisateurs)
+
+```bash
+# Démarrer Claude Code
+claude
+
+# Ajouter le repository comme marketplace
+/plugin marketplace add mrichaudeau/cloud-iac-plugin
+
+# Installer le plugin
+/plugin install iac@mrichaudeau-cloud-iac-plugin
+```
+
+Vous pouvez aussi utiliser le gestionnaire interactif :
+```bash
+/plugin
+# Puis naviguer vers l'onglet "Discover" et sélectionner le plugin
+```
+
+### Option 2 : Clone local (recommandé pour le développement)
 
 ```bash
 # Cloner le repository du plugin
 git clone https://github.com/mrichaudeau/cloud-iac-plugin.git ~/plugins/iac-plugin
 
-# Vérifier la structure
-ls ~/plugins/iac-plugin/
-# .claude-plugin/  skills/  agents/  hooks/  scripts/  config/  ...
+# Lancer Claude Code avec le plugin local
+claude --plugin-dir ~/plugins/iac-plugin
 ```
 
-### Option 2 : Utilisation directe depuis GitHub
+Vous pouvez charger plusieurs plugins :
+```bash
+claude --plugin-dir ~/plugins/iac-plugin --plugin-dir ~/plugins/autre-plugin
+```
+
+### Option 3 : Installation locale permanente
 
 ```bash
-# Le plugin peut être référencé directement (si supporté)
-claude --plugin git@github.com:mrichaudeau/cloud-iac-plugin.git
+# Démarrer Claude Code
+claude
+
+# Ajouter un marketplace local
+/plugin marketplace add ~/plugins/iac-plugin
 ```
+
+---
+
+## Gestion du Plugin
+
+### Commandes de gestion
+
+```bash
+/plugin                           # Ouvrir le gestionnaire de plugins (interface interactive)
+/plugin marketplace list          # Lister les marketplaces configurés
+/plugin marketplace update        # Rafraîchir les listings
+/plugin disable iac               # Désactiver le plugin sans le désinstaller
+/plugin enable iac                # Réactiver le plugin
+/plugin uninstall iac             # Supprimer le plugin
+```
+
+### Scopes d'installation
+
+Lors de l'installation via `/plugin`, vous pouvez choisir :
+- **User scope** : Installé pour vous sur tous les projets
+- **Project scope** : Installé pour tous les collaborateurs du repo (ajouté à `.claude/settings.json`)
+- **Local scope** : Installé uniquement pour vous sur ce repo
 
 ---
 
 ## Utilisation du Plugin
 
-### Démarrer Claude Code avec le plugin
+### Démarrer Claude Code
 
 ```bash
-# Naviguer vers votre projet
+# Si installé via marketplace, démarrer normalement
 cd /chemin/vers/mon-projet
+claude
 
-# Lancer Claude Code avec le plugin
+# Si installation locale (développement)
+cd /chemin/vers/mon-projet
 claude --plugin-dir ~/plugins/iac-plugin
 ```
 
@@ -399,6 +449,43 @@ terraform init
 # Valider
 terraform validate
 ```
+
+---
+
+## Distribution du Plugin
+
+### Structure Marketplace
+
+Le plugin inclut un fichier `.claude-plugin/marketplace.json` qui permet sa découverte :
+
+```json
+{
+  "name": "mrichaudeau-cloud-iac-plugin",
+  "plugins": [
+    {
+      "name": "iac",
+      "description": "Generate production-ready Terraform infrastructure",
+      "version": "0.1.0",
+      "path": "."
+    }
+  ]
+}
+```
+
+### Partager avec votre équipe
+
+1. **Via GitHub** : Les membres ajoutent le marketplace
+   ```bash
+   /plugin marketplace add mrichaudeau/cloud-iac-plugin
+   /plugin install iac@mrichaudeau-cloud-iac-plugin
+   ```
+
+2. **Via repo privé** : Même procédure avec un repo privé (nécessite GITHUB_TOKEN)
+
+3. **Via chemin local** : Pour un réseau partagé
+   ```bash
+   /plugin marketplace add /chemin/reseau/iac-plugin
+   ```
 
 ---
 

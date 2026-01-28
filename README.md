@@ -1,14 +1,84 @@
 # IaC Factory Plugin - Claude Code
 
-> **Plugin Claude Code pour la generation automatique d'infrastructure Terraform production-ready**
+> **Plugin Claude Code pour la génération automatique d'infrastructure Terraform production-ready**
+
+---
 
 ## Vision du Projet
 
 Ce plugin permet de :
-1. **Generer** une infrastructure Terraform complete a partir d'un schema ou description
-2. **Enrichir automatiquement** avec les best practices (securite, logs, finops, compliance)
-3. **Capitaliser** sur les modules generes via une factory GitHub centralisee
-4. **Reutiliser** les modules valides pour les futures generations
+1. **Générer** une infrastructure Terraform complète à partir d'un schéma ou description
+2. **Enrichir automatiquement** avec les best practices (sécurité, logs, finops, compliance)
+3. **Capitaliser** sur les modules générés via une factory GitHub centralisée
+4. **Réutiliser** les modules validés pour les futures générations
+
+---
+
+## Quick Start
+
+### 1. Installation via Marketplace
+
+```bash
+# Démarrer Claude Code
+claude
+
+# Ajouter le marketplace et installer le plugin
+/plugin marketplace add mrichaudeau/cloud-iac-plugin
+/plugin install iac@mrichaudeau-cloud-iac-plugin
+```
+
+**Alternative : Installation locale (développement)**
+```bash
+git clone https://github.com/mrichaudeau/cloud-iac-plugin.git ~/plugins/iac-plugin
+claude --plugin-dir ~/plugins/iac-plugin
+```
+
+### 2. Configuration (optionnel)
+
+```bash
+# Token GitHub pour accéder à la factory
+export GITHUB_TOKEN="ghp_xxxxxxxxxxxxxxxxxxxx"
+```
+
+### 3. Générer une infrastructure
+
+```bash
+# Description textuelle
+/iac:generate-infra "Application web Django avec PostgreSQL en production sur AWS"
+
+# Depuis un fichier
+/iac:generate-infra ./architecture.md
+```
+
+### 4. Valider et déployer
+
+```bash
+# Valider la sécurité
+/iac:validate-infra ./infrastructure
+
+# Estimer les coûts
+/iac:estimate-cost ./infrastructure
+
+# Déployer
+cd infrastructure
+terraform init
+terraform plan -var-file=environments/prod.tfvars
+terraform apply
+```
+
+---
+
+## Skills Disponibles
+
+| Skill | Description |
+|-------|-------------|
+| `/iac:generate-infra` | Génère une infrastructure Terraform complète |
+| `/iac:validate-infra` | Valide sécurité et compliance |
+| `/iac:estimate-cost` | Estime les coûts mensuels |
+| `/iac:publish-module` | Publie un module vers la factory |
+| `/iac:import-module` | Importe un module depuis la factory |
+
+---
 
 ## Architecture
 
@@ -17,17 +87,17 @@ Ce plugin permet de :
 │                         PLUGIN CLAUDE CODE                                   │
 │                                                                             │
 │  SKILLS (Commandes utilisateur)                                             │
-│  /generate-infra    → Genere infrastructure complete                        │
-│  /publish-module    → Publie module vers factory                            │
-│  /import-module     → Importe module depuis factory                         │
-│  /validate-infra    → Valide securite et compliance                         │
-│  /estimate-cost     → Estime les couts                                      │
+│  /iac:generate-infra  → Génère infrastructure complète                      │
+│  /iac:publish-module  → Publie module vers factory                          │
+│  /iac:import-module   → Importe module depuis factory                       │
+│  /iac:validate-infra  → Valide sécurité et compliance                       │
+│  /iac:estimate-cost   → Estime les coûts                                    │
 │                                                                             │
-│  AGENTS (Specialistes)                                                       │
-│  tf-generator       → Generation code Terraform                             │
-│  security-reviewer  → Review securite                                       │
-│  factory-sync       → Synchronisation factory                               │
-│  schema-parser      → Parsing schemas d'architecture                        │
+│  AGENTS (Spécialistes)                                                      │
+│  tf-generator        → Génération code Terraform                            │
+│  security-reviewer   → Review sécurité                                      │
+│  factory-sync        → Synchronisation factory                              │
+│  schema-parser       → Parsing schémas d'architecture                       │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
                               │
@@ -38,88 +108,102 @@ Ce plugin permet de :
 │  modules/aws/       modules/azure/       modules/gcp/                       │
 │  patterns/          policies/            catalog.json                       │
 │                                                                             │
+│  https://github.com/mrichaudeau/cloud_iac_factory                           │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
+
+---
 
 ## Structure du Plugin
 
 ```
 infra_as_code_pluggin/
-├── README.md                    # Ce fichier
-├── CLAUDE.md                    # Instructions principales pour Claude Code
+├── .claude-plugin/
+│   └── plugin.json               # Manifest (namespace: "iac")
 │
-├── docs/                        # Documentation complete
-│   ├── 00-VISION.md            # Vision et objectifs du projet
-│   ├── 01-ARCHITECTURE.md      # Architecture technique
-│   ├── 02-WORKFLOW.md          # Workflow de generation
-│   ├── 03-ENRICHMENT.md        # Logique d'enrichissement
-│   ├── 04-FACTORY.md           # Specification de la factory
-│   ├── 05-SECURITY.md          # Guardrails securite
-│   ├── 06-CONVENTIONS.md       # Conventions de nommage
-│   ├── 07-GOVERNANCE.md        # Regles de gouvernance
-│   └── 08-ROADMAP.md           # Plan d'implementation
+├── skills/                       # Skills avec frontmatter YAML
+│   ├── generate-infra/
+│   │   ├── SKILL.md
+│   │   ├── workflow.md
+│   │   └── formats.md
+│   ├── publish-module/
+│   ├── import-module/
+│   ├── validate-infra/
+│   └── estimate-cost/
 │
-├── skills/                      # Skills Claude Code
-│   ├── generate-infra.md
-│   ├── publish-module.md
-│   ├── import-module.md
-│   ├── validate-infra.md
-│   └── estimate-cost.md
-│
-├── agents/                      # Agents specialises
+├── agents/                       # Agents spécialisés
 │   ├── tf-generator.md
 │   ├── security-reviewer.md
 │   ├── factory-sync.md
 │   └── schema-parser.md
 │
+├── hooks/
+│   └── hooks.json               # Configuration des hooks
+│
+├── scripts/                     # Scripts pour les hooks
+│   ├── validate-bash-command.sh
+│   ├── post-edit-validation.sh
+│   └── post-generation-check.sh
+│
+├── config/                      # Configuration
+│   ├── factory.yaml             # Connexion à la factory
+│   ├── defaults.yaml            # Valeurs par défaut
+│   └── providers/               # Config par provider
+│
 ├── templates/                   # Templates Terraform
 │   ├── _backend.tf.tmpl
 │   ├── _providers.tf.tmpl
-│   ├── _variables.tf.tmpl
-│   ├── _locals.tf.tmpl
-│   └── module-call.tf.tmpl
+│   └── governance/
 │
-└── config/                      # Configuration
-    ├── factory.yaml
-    ├── defaults.yaml
-    └── providers/
-        ├── aws.yaml
-        ├── azure.yaml
-        └── gcp.yaml
+├── examples/                    # Exemples d'architectures
+│
+├── docs/                        # Documentation
+│   ├── INSTALLATION.md          # Guide d'installation
+│   ├── 00-VISION.md
+│   ├── 01-ARCHITECTURE.md
+│   └── ...
+│
+├── CLAUDE.md                    # Instructions pour Claude
+├── INDEX.md                     # Index de la documentation
+└── README.md                    # Ce fichier
 ```
 
-## Liens avec le Projet Existant
-
-Ce plugin s'appuie sur le framework Terraform existant dans `cloud_iac/` :
-- Reutilise les modules Terraform developpes
-- Applique les memes conventions et standards
-- Integre les regles de gouvernance definies
-
-## Quick Start
-
-```bash
-# Dans un projet client
-claude
-
-# Generer une infrastructure
-/generate-infra "Application web Django avec PostgreSQL en production sur AWS"
-
-# Apres validation et deploiement, publier vers la factory
-/publish-module ./modules/custom-module
-
-# Importer un module existant
-/import-module aws/networking/vpc
-```
+---
 
 ## Documentation
 
-Voir le dossier `docs/` pour la documentation complete :
-- [Vision du Projet](docs/00-VISION.md)
-- [Architecture Technique](docs/01-ARCHITECTURE.md)
-- [Workflow de Generation](docs/02-WORKFLOW.md)
-- [Logique d'Enrichissement](docs/03-ENRICHMENT.md)
-- [Factory GitHub](docs/04-FACTORY.md)
-- [Securite](docs/05-SECURITY.md)
-- [Conventions](docs/06-CONVENTIONS.md)
-- [Gouvernance](docs/07-GOVERNANCE.md)
-- [Roadmap](docs/08-ROADMAP.md)
+| Document | Description |
+|----------|-------------|
+| **[INSTALLATION.md](docs/INSTALLATION.md)** | **Guide d'installation et d'utilisation** |
+| [CLAUDE.md](CLAUDE.md) | Instructions pour Claude Code |
+| [INDEX.md](INDEX.md) | Index complet du projet |
+| [00-VISION.md](docs/00-VISION.md) | Vision et objectifs |
+| [01-ARCHITECTURE.md](docs/01-ARCHITECTURE.md) | Architecture technique |
+| [02-WORKFLOW.md](docs/02-WORKFLOW.md) | Workflow de génération |
+| [03-ENRICHMENT.md](docs/03-ENRICHMENT.md) | Logique d'enrichissement |
+| [04-FACTORY.md](docs/04-FACTORY.md) | Factory GitHub |
+| [05-SECURITY.md](docs/05-SECURITY.md) | Sécurité et guardrails |
+| [06-CONVENTIONS.md](docs/06-CONVENTIONS.md) | Conventions de nommage |
+| [07-GOVERNANCE.md](docs/07-GOVERNANCE.md) | Règles de gouvernance |
+
+---
+
+## Prérequis
+
+- **Claude Code CLI** >= 1.0.0
+- **Terraform** >= 1.5.0
+- **Git** >= 2.0
+- **GITHUB_TOKEN** (optionnel, pour la factory)
+
+---
+
+## Liens
+
+- **Plugin**: [github.com/mrichaudeau/cloud-iac-plugin](https://github.com/mrichaudeau/cloud-iac-plugin)
+- **Factory**: [github.com/mrichaudeau/cloud_iac_factory](https://github.com/mrichaudeau/cloud_iac_factory)
+
+---
+
+## Licence
+
+MIT
